@@ -30,13 +30,15 @@ RUN rm SuitecrmRelease.tar.gz
 
 RUN composer install --no-cache
 
+COPY install_defaults.php /var/www/html/install/
+COPY config_override.php /var/www/html
 # Make sure files/folders needed by the processes are accessable when they run under the nobody user
+USER root
 RUN chown -R nobody.nobody /var/www/html 
 # Make the document root a volume
 # VOLUME /var/www/html
 
-COPY install_defaults.php /var/www/html/install/
-COPY config_override.php /var/www/html
+
 # Switch to use a non-root user from here on
 USER nobody
 
