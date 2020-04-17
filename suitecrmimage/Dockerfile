@@ -36,6 +36,7 @@ RUN chown -R nobody.nobody /var/www/html
 # VOLUME /var/www/html
 
 COPY install_defaults.php /var/www/html/install/
+COPY config_override.php /var/www/html
 # Switch to use a non-root user from here on
 USER nobody
 
