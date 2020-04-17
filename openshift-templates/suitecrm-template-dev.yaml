@@ -49,15 +49,16 @@ objects:
                   oc import-image phpbase:7.3-fpm-alpine --from=php:7.3-fpm-alpine --confirm -n ${NAMESPACE} 
                   sleep 5
                   oc new-build --name=suitecrmdev-basebuild ${NAMESPACE}/phpbase:7.3-fpm-alpine~https://github.com/parkarteam/openshift-suitecrm.git   --context-dir=baseimage --strategy=docker --allow-missing-images -n ${NAMESPACE}  
-                  sleep 5
+                  sleep 50
                   oc start-build suitecrmdev-basebuild --follow -n ${NAMESPACE}  
-                  sleep 20
+                  sleep 300
                   oc new-build --name=suitecrmdev-build  ${NAMESPACE}/suitecrmdev-basebuild~https://github.com/parkarteam/openshift-suitecrm.git   --context-dir=suitecrmimage --strategy=docker --env=SUITECRM_RELEASE_URL=${SUITECRM_RELEASE_URL} -n ${NAMESPACE} 
-                  sleep 60
+                  sleep 50
                   oc start-build suitecrmdev-build --follow -n ${NAMESPACE}  
+                  sleep 300
                   # App 
                   oc new-app --name=suitecrm ${NAMESPACE}/suitecrmdev-build:latest   -n ${NAMESPACE} 
-                  sleep 20
+                  sleep 50
                   oc create secret generic suitecrmdev-secret   --from-literal="database_password=${DATABASE_PASSWORD}" --from-literal="database_user=${DATABASE_USER}" --from-literal="suitecrm_secret_token=${SUITECRM_SECRET_TOKEN}" --from-literal="suitecrm_security_salt=sql${SUITECRM_SECURITY_SALT}" -n ${NAMESPACE}
                   oc set env dc/suitecrm --from=secret/suitecrmdev-secret  -n ${NAMESPACE} 
                   oc set env dc/suitecrm DATABASE_HOST=${DATABASE_SERVICE_NAME} -n ${NAMESPACE}
@@ -69,9 +70,8 @@ objects:
                   oc expose svc/suitecrm -n ${NAMESPACE}
                   # deploy mysql 
                   oc new-app --name=${DATABASE_SERVICE_NAME} -e MYSQL_USER=${DATABASE_USER}   -e MYSQL_PASSWORD=${DATABASE_PASSWORD} -e MYSQL_DATABASE=${DATABASE_NAME}   docker.io/centos/mysql-57-centos7:latest -n ${NAMESPACE}
-
                   oc set resources dc/${DATABASE_SERVICE_NAME} --limits=memory=${MEMORY_MYSQL_LIMIT} 
-
+                  sleep 50
               env:
                 - name: NAMESPACE
                   valueFrom:
