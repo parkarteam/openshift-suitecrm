@@ -20,18 +20,11 @@ oc policy add-role-to-user edit system:serviceaccount:suitecrmdev:default   -n s
 oc project suitecrmdev
 ```
 
-Checkout this project 
-
-```
-git clone https://github.com/parkarteam/openshift-suitecrm.git
-
-```
-
 ## Create app with the template
 
 ```
 cd openshift-suitecrm 
-oc new-app  -f openshift-templates/suitecrm-template-dev.yaml -n suitecrmdev
+oc new-app  -f https://raw.githubusercontent.com/parkarteam/openshift-suitecrm/master/openshift-templates/suitecrm-template-dev.yaml -n suitecrmdev
 
 ```
 Allow for 15 to 20 mins for the application to be ready. 
