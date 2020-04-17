@@ -69,7 +69,7 @@ objects:
                   # sleep 5
                   oc expose svc/suitecrm -n ${NAMESPACE}
                   # deploy mysql 
-                  oc new-app --name=${DATABASE_SERVICE_NAME} -e MYSQL_USER=${DATABASE_USER}   -e MYSQL_PASSWORD=${DATABASE_PASSWORD} -e MYSQL_DATABASE=${DATABASE_NAME}   docker.io/centos/mysql-57-centos7:latest -n ${NAMESPACE}
+                  oc new-app --name=${DATABASE_SERVICE_NAME} -e MYSQL_DATABASE=${DATABASE_NAME}   docker.io/centos/mysql-57-centos7:latest -n ${NAMESPACE}
                   oc set resources dc/${DATABASE_SERVICE_NAME} --limits=memory=${MEMORY_MYSQL_LIMIT} 
                   oc set env dc/${DATABASE_SERVICE_NAME} --from=secret/suitecrmdev-secret  -n suitecrmdev
                   sleep 50
