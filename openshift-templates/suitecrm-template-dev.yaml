@@ -1,0 +1,190 @@
+apiVersion: v1
+kind: Template
+labels:
+  app: suitecrm
+  template: suitecrm-mysql
+message: >-
+  The following service(s) have been created in your project: ${NAME},  ${DATABASE_SERVICE_NAME}.
+  For more information about using this template, including OpenShift  considerations, see
+  https://github.com/parkarteam/openshift-suitecrm/blob/master/README.md
+
+metadata:
+  annotations:
+    description: >-
+      SuiteCRM is the award-winning open-source, enterprise-ready Customer Relationship Management (CRM) software application.
+    icon: play
+    iconClass: icon-play
+    openshift.io/display-name: Suitecrm + MySQL
+    openshift.io/documentation-url: 'https://github.com/parkarteam/openshift-suitecrm/blob/master/README.md'
+    openshift.io/long-description: >-
+      This template defines resources needed to develop a SuiteCRM application, including a build configuration, application deployment configuration, and
+      database deployment configuration.
+    openshift.io/provider-display-name: Parkar Consulting Group LLC.
+    openshift.io/support-url: 'https://github.com/parkarteam/openshift-suitecrm/issues'
+    tags: 'quickstart,php, Suitecrm , Sales, Marketing , Accounts , Support'
+    template.openshift.io/bindable: 'false'
+  name: suitecrm
+  namespace: suitecrmdev
+objects:
+  - apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: suitecrm-installer
+      labels : 
+        name: suitecrmdev
+    spec:
+      activeDeadlineSeconds: 1200
+      completions: 1
+      parallelism: 1
+      template:
+        spec:
+          containers:
+            - command:
+                - /bin/bash
+                - '-x'
+                - '-c'
+                - |  
+                  oc version 
+                  # base images 
+                  oc import-image phpbase:7.3-fpm-alpine --from=php:7.3-fpm-alpine --confirm -n ${NAMESPACE} 
+                  sleep 5
+                  oc new-build --name=suitecrmdev-basebuild ${NAMESPACE}/phpbase:7.3-fpm-alpine~https://github.com/parkarteam/openshift-suitecrm.git   --context-dir=baseimage --strategy=docker --allow-missing-images -n ${NAMESPACE}  
+                  sleep 5
+                  oc start-build suitecrmdev-basebuild --follow -n ${NAMESPACE}  
+                  sleep 20
+                  oc new-build --name=suitecrmdev-build  ${NAMESPACE}/suitecrmdev-basebuild~https://github.com/parkarteam/openshift-suitecrm.git   --context-dir=suitecrmimage --strategy=docker --env=SUITECRM_RELEASE_URL=${SUITECRM_RELEASE_URL} -n ${NAMESPACE} 
+                  sleep 60
+                  oc start-build suitecrmdev-build --follow -n ${NAMESPACE}  
+                  # App 
+                  oc new-app --name=suitecrm ${NAMESPACE}/suitecrmdev-build:latest   -n ${NAMESPACE} 
+                  sleep 20
+                  oc create secret generic suitecrmdev-secret   --from-literal="database_password=${DATABASE_PASSWORD}" --from-literal="database_user=${DATABASE_USER}" --from-literal="suitecrm_secret_token=${SUITECRM_SECRET_TOKEN}" --from-literal="suitecrm_security_salt=sql${SUITECRM_SECURITY_SALT}" -n ${NAMESPACE}
+                  oc set env dc/suitecrm --from=secret/suitecrmdev-secret  -n ${NAMESPACE} 
+                  oc set env dc/suitecrm DATABASE_HOST=${DATABASE_SERVICE_NAME} -n ${NAMESPACE}
+                  oc set env dc/suitecrm DATABASE_NAME=${DATABASE_NAME} -n ${NAMESPACE}
+                  oc set triggers dc -l suitecrm --containers=suitecrm-app --from-image=suitecrm-build:latest --manual -n ${NAMESPACE}
+                  oc rollout latest dc/suitecrm -n ${NAMESPACE} 
+                  
+                  # sleep 5
+                  oc expose svc/suitecrm -n ${NAMESPACE}
+                  # deploy mysql 
+                  oc new-app --name=${DATABASE_SERVICE_NAME} -e MYSQL_USER=${DATABASE_USER}   -e MYSQL_PASSWORD=${DATABASE_PASSWORD} -e MYSQL_DATABASE=${DATABASE_NAME}   docker.io/centos/mysql-57-centos7:latest -n ${NAMESPACE}
+
+                  oc set resources dc/${DATABASE_SERVICE_NAME} --limits=memory=${MEMORY_MYSQL_LIMIT} 
+
+              env:
+                - name: NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+              image: 'quay.io/openshift/origin-cli:4.6.0'
+              name: suitecrm-installer-job
+              resources: {}
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+          restartPolicy: Never
+parameters:
+  - description: The name assigned to all of the frontend objects defined in this template (default value suitecrm).
+    displayName: Name
+    name: NAME
+    required: true
+    value: suitecrm
+  - description: The OpenShift Namespace where the ImageStream resides (default value suitecrmdev).
+    displayName: Namespace
+    name: NAMESPACE
+    required: true
+    value: suitecrmdev
+  - description: Version of PHP image to be used (7.2-fpm-alpine or latest).
+    displayName: PHP Version
+    name: PHP_VERSION
+    required: true
+    value: 7.2-fpm-alpine
+  - description: Maximum amount of memory the Suitecrm container can use (default 512Mi).
+    displayName: Memory Limit
+    name: MEMORY_LIMIT
+    required: true
+    value: 512Mi
+  - description: Maximum amount of memory the MySQL container can use (default 512Mi).
+    displayName: Memory Limit (MySQL)
+    name: MEMORY_MYSQL_LIMIT
+    required: true
+    value: 512Mi
+  - description: 'Volume space available for data, e.g. 512Mi, 2Gi'
+    displayName: Volume Capacity
+    name: VOLUME_CAPACITY
+    required: true
+    value: 1Gi
+  - description: The URL of the repository with your application source code or a fork of this project. 
+    displayName: Git Repository URL
+    name: SOURCE_REPOSITORY_URL
+    required: true
+    value: 'https://github.com/parkarteam/openshift-suitecrm.git'
+  - description: >-
+      Set this to a branch name, tag or other ref of your repository if you are
+      not using the default branch.
+    displayName: Git Reference
+    name: SOURCE_REPOSITORY_REF
+  - description: >-
+      Set this to the relative path to your project if it is not in the root of
+      your repository.
+    displayName: Context Directory
+    name: CONTEXT_DIR
+  - description: >-
+      The exposed hostname that will route to the Suitecrm service, if left
+      blank a value will be defaulted.
+    displayName: Application Hostname
+    name: APPLICATION_DOMAIN
+  - description: >-
+      Github trigger secret.  A difficult to guess string encoded as part of the
+      webhook URL.  Not encrypted.
+    displayName: GitHub Webhook Secret
+    from: '[a-zA-Z0-9]{40}'
+    generate: expression
+    name: GITHUB_WEBHOOK_SECRET
+  - description: Database Service Name (default suitecrmdev-mysql)
+    displayName: Database Service Name
+    name: DATABASE_SERVICE_NAME
+    required: true
+    value: suitecrmdev-mysql
+  - description: 'Database engine:  mysql. Value has to be mysql other db is not supported'
+    displayName: Database Engine
+    name: DATABASE_ENGINE
+    required: true
+    value: mysql
+  - displayName: Database Name (default value suitecrmdevdb)
+    name: DATABASE_NAME
+    required: true
+    value: suitecrmdevdb
+  - displayName: Database User
+    name: DATABASE_USER
+    required: true
+    value: suitecrmdevdbuser
+    description : Databse user (default value suitecrmdevdbuser)
+  - displayName: Database Password
+    from: '[a-zA-Z0-9]{16}'
+    generate: expression
+    name: DATABASE_PASSWORD
+  - description: Set this to a long random string.
+    displayName: Suitecrm secret token
+    from: '[\w]{50}'
+    generate: expression
+    name: SUITECRM_SECRET_TOKEN
+  - description: Security salt for session hash.
+    displayName: Suitecrm Security Salt
+    from: '[a-zA-Z0-9]{40}'
+    generate: expression
+    name: SUITECRM_SECURITY_SALT
+  - description: >-
+      How often to check script timestamps for updates, in seconds. 0 will
+      result in OPcache checking for updates on every request.
+    displayName: OPcache Revalidation Frequency
+    name: OPCACHE_REVALIDATE_FREQ
+    value: '2'
+  - description: The custom Composer mirror URL
+    displayName: Custom Composer Mirror URL
+    name: COMPOSER_MIRROR
+  - displayName: Suitecrm release url
+    name: SUITE_RELEASE_URL
+    description : Suitecrm release url (default version is Suitecrm-v7.11.13). This can be changed after deployment. 
+    required: true
+    value: https://github.com/salesagility/SuiteCRM/archive/v7.11.13.tar.gz
