@@ -27,7 +27,7 @@ RUN curl -LJ ${SUITECRM_RELEASE_URL}  -o  SuitecrmRelease.tar.gz && \
 RUN rm SuitecrmRelease.tar.gz
 # RUN rm /var/www/html/install/install_defaults.php 
 
-COPY install_defaults.php /var/www/html/install/
+
 RUN composer install --no-cache
 
 # Make sure files/folders needed by the processes are accessable when they run under the nobody user
@@ -35,7 +35,7 @@ RUN chown -R nobody.nobody /var/www/html
 # Make the document root a volume
 # VOLUME /var/www/html
 
-COPY configuration.php config/configuration.php
+COPY install_defaults.php /var/www/html/install/
 # Switch to use a non-root user from here on
 USER nobody
 

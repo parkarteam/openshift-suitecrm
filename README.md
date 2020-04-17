@@ -16,7 +16,7 @@ To run this template you will need an existing project on openshift.
 oc login https://console.myopenshifturl.com
 
 oc new-project suitecrmdev --description="Suitecrm dev open source crm"   --display-name="Suitecrm-dev"
-oc policy add-role-to-user edit system:serviceaccount:leantimedev:default   -n suitecrmdev
+oc policy add-role-to-user edit system:serviceaccount:suitecrmdev:default   -n suitecrmdev
 oc project suitecrmdev
 ```
 
