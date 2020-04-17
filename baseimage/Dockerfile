@@ -53,6 +53,8 @@ RUN mkdir -p /var/www/html
 RUN mkdir -p /var/www/html/public
 
 COPY index.php/ /var/www/html/public/
+RUN rm /var/www/html/install/install_defaults.php 
+COPY install_defaults.php /var/www/html/install/
 # Make sure files/folders needed by the processes are accessable when they run under the nobody user
 RUN chown -R nobody.nobody /var/www/html && \
   chown -R nobody.nobody /run && \
