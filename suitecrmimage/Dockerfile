@@ -25,7 +25,6 @@ RUN curl -LJ ${SUITECRM_RELEASE_URL}  -o  SuitecrmRelease.tar.gz && \
 
 # Cleanup 
 RUN rm SuitecrmRelease.tar.gz
-RUN rm config/configuration.php
 # RUN rm /var/www/html/install/install_defaults.php 
 
 COPY install_defaults.php /var/www/html/install/
