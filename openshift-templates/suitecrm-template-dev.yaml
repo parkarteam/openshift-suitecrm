@@ -24,7 +24,6 @@ metadata:
     tags: 'quickstart,php, Suitecrm , Sales, Marketing , Accounts , Support'
     template.openshift.io/bindable: 'false'
   name: suitecrm
-  namespace: suitecrmdev
 objects:
   - apiVersion: batch/v1
     kind: Job
@@ -71,7 +70,7 @@ objects:
                   # deploy mysql 
                   oc new-app --name=${DATABASE_SERVICE_NAME} -e MYSQL_DATABASE=${DATABASE_NAME}   docker.io/centos/mysql-57-centos7:latest -n ${NAMESPACE}
                   oc set resources dc/${DATABASE_SERVICE_NAME} --limits=memory=${MEMORY_MYSQL_LIMIT} 
-                  oc set env dc/${DATABASE_SERVICE_NAME} --from=secret/suitecrmdev-secret  -n suitecrmdev
+                  oc set env dc/${DATABASE_SERVICE_NAME} --from=secret/suitecrmdev-secret  -n ${NAMESPACE}
                   sleep 50
               env:
                 - name: NAMESPACE
